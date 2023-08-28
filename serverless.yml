@@ -1,0 +1,49 @@
+service: bookchat
+useDotenv: true
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  region: eu-west-1
+  runtime: python3.11
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+          - 's3:GetObject'
+          - 's3:PutObject'
+          - 's3:DeleteObject'
+          Resource:
+          - 'arn:aws:s3:::${env:S3_BUCKET}/*'
+  ecr:
+    scanOnPush: true
+    images:
+      baseimage:
+        path: ./
+
+functions:
+  embed:
+    image:
+      name: baseimage
+      command:
+        - "handler.embed"
+    memorySize: 1024
+    timeout: 300
+    environment:
+      S3_BUCKET: ${env:S3_BUCKET}
+      S3_UPLOADS_PREFIX: ${env:S3_UPLOADS_PREFIX}
+      S3_VECTORS_PREFIX: ${env:S3_VECTORS_PREFIX}
+    maximumRetryAttempts: 1
+  query:
+    image:
+      name: baseimage
+      command:
+        - "handler.query"
+    memorySize: 1024
+    timeout: 60
+    environment:
+      S3_BUCKET: ${env:S3_BUCKET}
+      S3_UPLOADS_PREFIX: ${env:S3_UPLOADS_PREFIX}
+      S3_VECTORS_PREFIX: ${env:S3_VECTORS_PREFIX}
+    maximumRetryAttempts: 1
